@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Metadados do documento -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <title>Birdie - José Lima</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <script>
+
+        // Configuração inicial do Phaser
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+    
+        // Criação do jogo
+        var game = new Phaser.Game(config);
+
+        // Declaração das variáveis
+        var birdie;
+        var particles;
+        var emitter;
+        var speedX = 5;
+        var speedY = 3;
+        var prevDirectionY;
+    
+        // Função de pré-carregamento dos assets
+        function preload() {
+            this.load.image('bg', 'assets/bg_space.png');
+            this.load.spritesheet('bird', 'assets/bird-red.png', { frameWidth: 75, frameHeight: 75 });
+            this.load.image('particle', 'assets/particle.png');  // Certifique-se de ter uma imagem de partícula aqui
+        }
+    
+        // Função de criação dos objetos na cena
+        function create() {
+            // Adiciona o fundo
+            this.add.image(400, 300, 'bg').setScale(1.2);
+
+            // Adiciona e configura o sprite do pássaro
+            birdie = this.add.sprite(100, 300, 'bird').setScale(1.3);
+
+            // Cria a animação de voo para o pássaro
+            this.anims.create({
+                key: 'fly',
+                frames: this.anims.generateFrameNumbers('bird', { start: 0, end: 7 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            // Inicia a animação e define propriedades iniciais
+            birdie.anims.play('fly', true);
+            birdie.indo = true;
+            birdie.directionY = Phaser.Math.Between(-1, 1);
+            prevDirectionY = birdie.directionY;
+
+            // Cria as partículas e o emissor
+            particles = this.add.particles('particle');
+
+            emitter = particles.createEmitter({
+                speed: { min: -100, max: 100 },
+                scale: { start: 0.008, end: 0 },
+                blendMode: 'ADD'
+            });
+
+            // Faz com que o emissor siga o pássaro
+            emitter.startFollow(birdie);
+
+            // Adiciona um evento de tempo para mudar a direção do pássaro
+            this.time.addEvent({
+                delay: 350,
+                loop: true,
+                callback: function () {
+                    birdie.directionY = Phaser.Math.Between(-0.5, 0.5);
+                }
+            });
+        }
+    
+        // Função de atualização da cena
+        function update() { 
+            // Verifica se o pássaro está na posição inicial
+            if (birdie.x === 100) {
+                birdie.setFlip(false, false);
+                birdie.indo = true;
+            }
+
+            // Movimento do pássaro para a direita
+            if (birdie.x < 700 && birdie.indo === true) {
+                birdie.x += speedX;
+            } else if (birdie.x >= 700) {
+                birdie.indo = false;
+            }
+
+            // Movimento do pássaro para a esquerda
+            if (birdie.x > 100 && birdie.indo === false) {
+                birdie.x -= speedX;
+                birdie.setFlip(true, false);
+            }
+
+            // Movimento vertical do pássaro
+            birdie.y += birdie.directionY * speedY;
+
+            // Verifica os limites verticais da tela
+            if (birdie.y <= 25) {
+                birdie.directionY = 1;
+            } else if (birdie.y >= 575) {
+                birdie.directionY = -1;
+            }
+
+            // Criação de partículas ao mudar de direção
+            if (birdie.directionY !== prevDirectionY) {
+                prevDirectionY = birdie.directionY;
+
+                // Usando um loop for para criar múltiplas partículas
+                for (var i = 0; i < 10; i++) {
+                    emitter.explode(1, birdie.x + Phaser.Math.Between(-10, 10), birdie.y + Phaser.Math.Between(-10, 10));
+                }
+            }
+        }
+    
+    </script>
+
+</body>
+</html>
